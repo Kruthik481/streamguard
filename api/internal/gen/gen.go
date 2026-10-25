@@ -49,20 +49,25 @@ type Generator struct {
 	published []atomic.Int64
 }
 
+const cardProfileSeed = 42
+
 func New(pub Publisher, partitions int, seed int64, now func() time.Time) *Generator {
 	rng := rand.New(rand.NewPCG(uint64(seed), 0x5eed))
+	// Card profiles use a fixed seed: windows outlive a run, so a reseeded profile would make a
+	// card's first transaction of the next run look like travel or a new merchant.
+	profile := rand.New(rand.NewPCG(cardProfileSeed, 0x5eed))
 	countries := rules.Countries()
 	cards := make([]card, cardCount)
 	for i := range cards {
 		merchants := make([]string, merchantsPerCard)
 		for j := range merchants {
-			merchants[j] = fmt.Sprintf("m-%04d", rng.IntN(merchantPool))
+			merchants[j] = fmt.Sprintf("m-%04d", profile.IntN(merchantPool))
 		}
 		cards[i] = card{
 			id:        fmt.Sprintf("card-%03d", i),
-			country:   countries[rng.IntN(len(countries))],
+			country:   countries[profile.IntN(len(countries))],
 			merchants: merchants,
-			typical:   minTypicalCents + rng.Int64N(typicalSpread),
+			typical:   minTypicalCents + profile.Int64N(typicalSpread),
 		}
 	}
 	return &Generator{pub: pub, partitions: partitions, now: now, rng: rng, cards: cards,

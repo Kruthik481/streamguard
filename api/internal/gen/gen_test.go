@@ -136,3 +136,16 @@ func TestRunPublishesAtTheRequestedRate(t *testing.T) {
 		t.Fatalf("published %d in 300ms at 100/s", n)
 	}
 }
+
+// Card windows outlive a run (24h TTL), so a card's home country, merchants and typical amount
+// must not change between runs or its first transaction looks like travel or a new merchant.
+func TestCardProfilesAreStableAcrossSeeds(t *testing.T) {
+	a := New(nil, 4, 1, time.Now)
+	b := New(nil, 4, 2, time.Now)
+	for i := range a.cards {
+		if a.cards[i].country != b.cards[i].country || a.cards[i].typical != b.cards[i].typical ||
+			!slices.Equal(a.cards[i].merchants, b.cards[i].merchants) {
+			t.Fatalf("card %d differs between seeds: %+v vs %+v", i, a.cards[i], b.cards[i])
+		}
+	}
+}
