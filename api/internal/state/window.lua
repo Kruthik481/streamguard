@@ -1,0 +1,6 @@
+-- KEYS[1] card window; ARGV: score(ms), member, oldest kept score, max entries, ttl(ms)
+redis.call('ZADD', KEYS[1], ARGV[1], ARGV[2])
+redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', '(' .. ARGV[3])
+redis.call('ZREMRANGEBYRANK', KEYS[1], 0, -(tonumber(ARGV[4]) + 1))
+redis.call('PEXPIRE', KEYS[1], ARGV[5])
+return redis.call('ZRANGE', KEYS[1], 0, -1)
