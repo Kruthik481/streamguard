@@ -102,7 +102,7 @@ func serve(log *slog.Logger) error {
 		events, log)
 
 	handler := httpapi.New(httpapi.Deps{
-		Ctl: ctl, Alerts: st, Hub: events, Limiter: httpapi.NewLimiter(rdb, cfg.KeyPrefix, controlPerMinute),
+		Ctl: ctl, Alerts: st, Hub: events, Limiter: httpapi.NewLimiter(controlPerMinute),
 		Origin: cfg.WebOrigin, KeepAlive: keepAlive, Log: log,
 		Checks: map[string]func(context.Context) error{
 			"postgres": st.Ping,
