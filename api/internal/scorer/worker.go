@@ -174,7 +174,9 @@ func (c *Coordinator) recordWithRetry(ctx context.Context, tx domain.Tx, hits []
 	for {
 		// A kill must not abort a commit halfway: Postgres may commit while pgx reports the
 		// cancellation, which would hide a scored tx. The ack check after this still sees the kill.
-		inserted, err := c.d.Store.Record(context.WithoutCancel(ctx), tx, hits, meta)
+		rctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), recordTimeout)
+		inserted, err := c.d.Store.Record(rctx, tx, hits, meta)
+		cancel()
 		if err == nil {
 			return inserted, nil
 		}
@@ -204,6 +206,9 @@ func (c *Coordinator) publishResult(id, p int, tx domain.Tx, hits []domain.Hit, 
 	c.d.Hub.Publish(hub.Event{Type: "scored", Data: Scored{Tx: tx, Worker: id, Partition: p,
 		Score: score, Severity: domain.Severity(score), Hits: hits}})
 }
+
+// recordTimeout bounds one Record attempt, which runs outside the worker's cancellation.
+var recordTimeout = 5 * time.Second
 
 func sleep(ctx context.Context, d time.Duration) bool {
 	t := time.NewTimer(d)
