@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: streamguard
+          POSTGRES_PASSWORD: streamguard
+          POSTGRES_DB: streamguard_test
+        ports: ["5435:5432"]
+        options: >-
+          --health-cmd "pg_isready -U streamguard"
+          --health-interval 2s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports: ["6381:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+      - name: Start Redpanda
+        run: >-
+          docker run -d --name redpanda -p 19092:9092 redpandadata/redpanda:latest
+          redpanda start --mode=dev-container --smp=1
+          --kafka-addr=0.0.0.0:9092 --advertise-kafka-addr=localhost:19092
+      - run: go vet ./...
+      - run: go run honnef.co/go/tools/cmd/staticcheck@latest ./...
+      - name: Wait for Redpanda
+        run: |
+          for i in $(seq 1 30); do
+            docker exec redpanda rpk cluster health 2>/dev/null | grep -q 'Healthy:.*true' && exit 0
+            sleep 2
+          done
+          docker logs redpanda; exit 1
+      - run: go test -race -tags redpanda -coverpkg=./internal/... -coverprofile=coverage.out ./internal/...
+      - name: Coverage gate (80%)
+        run: go tool cover -func=coverage.out | awk '/^total:/ { sub("%", "", $3); print "total " $3 "%"; if ($3 + 0 < 80) exit 1 }'
