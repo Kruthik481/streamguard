@@ -40,6 +40,7 @@ func (f *fakeCtl) View() *run.View                      { return f.view }
 type fakeAlerts struct {
 	gotCursor int64
 	gotRule   string
+	statsErr  error
 }
 
 func (f *fakeAlerts) ListAlerts(_ context.Context, cursor int64, rule string) ([]store.Alert, int64, error) {
@@ -47,6 +48,9 @@ func (f *fakeAlerts) ListAlerts(_ context.Context, cursor int64, rule string) ([
 	return []store.Alert{{ID: 9, TxID: "t9", Rules: []string{"velocity"}}}, 0, nil
 }
 func (f *fakeAlerts) MinuteStats(context.Context, time.Time) ([]store.MinuteStat, error) {
+	if f.statsErr != nil {
+		return nil, f.statsErr
+	}
 	return []store.MinuteStat{{Scored: 4}}, nil
 }
 
@@ -271,5 +275,26 @@ func TestEventsKeepAliveAndEndWhenHubCloses(t *testing.T) {
 	e.hub.Close()
 	if _, err := io.ReadAll(r); err != nil {
 		t.Fatalf("stream should end cleanly: %v", err)
+	}
+}
+
+// EventSource gives up for good on a non-200 or non-event-stream response, so a failed snapshot
+// must still answer as a stream and then end it: a normal end makes the browser retry.
+func TestEventsSnapshotFailureEndsTheStreamSoBrowsersRetry(t *testing.T) {
+	e := newEnv(fakeLimiter{allow: true}, nil)
+	e.alerts.statsErr = errors.New("neon waking up")
+	srv := httptest.NewServer(e.h)
+	defer srv.Close()
+	resp, err := http.Get(srv.URL + "/events")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK || resp.Header.Get("Content-Type") != "text/event-stream" {
+		t.Fatalf("status %d content type %q", resp.StatusCode, resp.Header.Get("Content-Type"))
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil || strings.Contains(string(body), "snapshot") {
+		t.Fatalf("stream should end without a snapshot: %q %v", body, err)
 	}
 }

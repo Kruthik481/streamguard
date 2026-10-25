@@ -29,17 +29,19 @@ func (s *server) events(w http.ResponseWriter, r *http.Request) {
 	}
 	ch, cancel := s.d.Hub.Subscribe() // subscribe before the snapshot so no event falls in between
 	defer cancel()
-	snap, err := s.snapshot(r.Context())
-	if err != nil {
-		s.internal(w, err)
-		return
-	}
+	// Headers go out before the snapshot: EventSource stops retrying after a non-200 response, but
+	// it reconnects after a stream that simply ends, which is how a failed snapshot is reported.
 	h := w.Header()
 	h.Set("Content-Type", "text/event-stream")
 	h.Set("Cache-Control", "no-cache")
 	h.Set("Connection", "keep-alive")
 	h.Set("X-Accel-Buffering", "no")
 	w.WriteHeader(http.StatusOK)
+	snap, err := s.snapshot(r.Context())
+	if err != nil {
+		s.d.Log.Error("events snapshot failed", "err", err)
+		return
+	}
 	if writeEvent(w, hub.Event{Type: "snapshot", Data: snap}) != nil {
 		return
 	}
