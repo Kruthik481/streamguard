@@ -5,7 +5,7 @@ export function Feed({ items }: { items: FeedItem[] }) {
   return (
     <section className="panel" aria-label="Live transactions">
       <h2 className="panel-title">Live transactions</h2>
-      <ol data-testid="feed" className="max-h-96 overflow-y-auto font-mono text-xs">
+      <ol data-testid="feed" className="max-h-96 overflow-y-auto [overflow-anchor:none] font-mono text-[13px]">
         {items.length === 0 && <li className="text-muted">Start a run to see transactions stream in.</li>}
         {items.map((t) => (
           <li key={t.id} className={`feed-row ${t.rules.length ? `sev-${t.severity}` : ''}`}>

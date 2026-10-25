@@ -17,13 +17,13 @@ type Props = {
 export function RunBar({ run, now, connected, busy, onStart, onInject }: Props) {
   const running = run?.status === 'running';
   return (
-    <section className="panel flex flex-wrap items-center gap-3" aria-label="Run controls">
+    <section className="panel runbar flex flex-wrap items-center gap-3" aria-label="Run controls">
       <button type="button" data-testid="start-run" className="btn-primary" disabled={busy || running} onClick={onStart}>
         {running ? 'Run in progress' : 'Start a 3-minute run'}
       </button>
-      <p data-testid="run-status" className="text-sm text-muted" aria-live="polite">
+      <p data-testid="run-status" className={`run-status ${running ? 'is-live' : ''}`} aria-live="polite">
         {!connected && 'Connecting to the stream…'}
-        {connected && running && `Run #${run.id} · ${countdown(run.ends_at, now)} left`}
+        {connected && running && `Run ${String(run.id).padStart(2, '0')} · ${countdown(run.ends_at, now)} left`}
         {connected && !running && (run ? `Last run #${run.id} ${run.status}` : 'No run yet')}
       </p>
       <div className="ml-auto flex flex-wrap gap-2" role="group" aria-label="Inject an attack">

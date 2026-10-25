@@ -12,11 +12,11 @@ export function Idempotency({ counters }: { counters: Counters | null }) {
   return (
     <section data-testid="idempotency" className="panel" aria-label="Delivery guarantees">
       <h2 className="panel-title">At-least-once in, exactly-once out</h2>
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+      <dl className="grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-3">
         {ROWS.map(({ key, label }) => (
           <div key={key} className="contents">
             <dt className="text-muted">{label}</dt>
-            <dd className="text-right font-mono">{(counters?.[key] ?? 0).toLocaleString()}</dd>
+            <dd className="text-right text-2xl font-semibold leading-none text-[#fff3e2]">{(counters?.[key] ?? 0).toLocaleString()}</dd>
           </div>
         ))}
       </dl>

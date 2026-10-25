@@ -7,6 +7,7 @@ import { AlertHistory } from '@/components/AlertHistory';
 import { Feed } from '@/components/Feed';
 import { Idempotency } from '@/components/Idempotency';
 import { RunBar } from '@/components/RunBar';
+import { StreamMap } from '@/components/StreamMap';
 import { Throughput } from '@/components/Throughput';
 import { Workers } from '@/components/Workers';
 import { injectScenario, killWorker, startRun } from '@/lib/api';
@@ -44,30 +45,34 @@ export function Console() {
 
   const run = state.run;
   const running = run?.status === 'running';
+  const workers = run?.workers ?? EMPTY_WORKERS;
+  const lag = run?.lag ?? [];
   return (
     <MotionConfig reducedMotion="user">
-    <main className="mx-auto max-w-6xl space-y-4 p-4 md:p-8">
-      <header>
-        <h1 className="text-2xl font-semibold">StreamGuard</h1>
-        <p className="text-muted">Real-time card-fraud scoring on a partitioned stream. Kill a worker mid-run: nothing is lost, nothing is scored twice.</p>
-      </header>
-      <RunBar run={run} now={now} connected={state.connected} busy={busy}
-        onStart={act(startRun)} onInject={(name) => act(() => injectScenario(name))()} />
-      <Workers workers={run?.workers ?? EMPTY_WORKERS} lag={run?.lag ?? []} running={running}
-        onKill={(id) => act(() => killWorker(id))()} />
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="space-y-4 md:col-span-2">
-          <Throughput buckets={state.throughput} />
-          <Feed items={state.feed} />
+      <main className="mx-auto max-w-6xl space-y-4 px-4 py-6 md:px-8 md:py-10">
+        <header className="masthead">
+          <h1 className="title">StreamGuard</h1>
+          <p className="tagline">
+            Real-time card-fraud scoring on a partitioned stream. Kill a worker mid-run: nothing is lost, nothing is scored twice.
+          </p>
+        </header>
+        <RunBar run={run} now={now} connected={state.connected} busy={busy}
+          onStart={act(startRun)} onInject={(name) => act(() => injectScenario(name))()} />
+        <StreamMap workers={workers} lag={lag} latest={state.feed[0] ?? null} running={running} />
+        <Workers workers={workers} lag={lag} running={running} onKill={(id) => act(() => killWorker(id))()} />
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="space-y-4 md:col-span-2">
+            <Throughput buckets={state.throughput} />
+            <Feed items={state.feed} />
+          </div>
+          <div className="space-y-4">
+            <Idempotency counters={run?.counters ?? null} />
+            <ActivityLog items={state.activity} />
+          </div>
         </div>
-        <div className="space-y-4">
-          <Idempotency counters={run?.counters ?? null} />
-          <ActivityLog items={state.activity} />
-        </div>
-      </div>
-      <AlertHistory live={state.alerts} refreshKey={`${run?.id ?? 0}-${run?.status ?? ''}`} />
-      {toast && <div data-testid="toast" role="status" className="toast">{toast}</div>}
-    </main>
+        <AlertHistory live={state.alerts} refreshKey={`${run?.id ?? 0}-${run?.status ?? ''}`} />
+        {toast && <div data-testid="toast" role="status" className="toast">{toast}</div>}
+      </main>
     </MotionConfig>
   );
 }

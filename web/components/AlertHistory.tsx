@@ -41,16 +41,16 @@ export function AlertHistory({ live, refreshKey }: { live: Alert[]; refreshKey: 
         </label>
       </div>
       {error && <p role="alert" className="text-sm">{error}</p>}
-      <div className="max-h-[28rem] overflow-y-auto">
-      <table className="w-full text-sm">
+      <div className="max-h-[28rem] overflow-y-auto [overflow-anchor:none]">
+      <table className="w-full text-base">
         <thead className="sticky top-0 bg-[var(--panel)]"><tr><th>Card</th><th>Amount</th><th>Rules</th><th>Severity</th></tr></thead>
         <tbody>
           {rows.map((a) => (
             <tr key={a.tx_id} data-testid="alert-row" className={`sev-${a.severity}`}>
-              <td className="font-mono">{a.card_id}</td>
-              <td className="font-mono">{money(a.amount_cents)}</td>
+              <td className="font-mono text-sm">{a.card_id}</td>
+              <td className="font-mono text-sm">{money(a.amount_cents)}</td>
               <td title={a.details.map((d) => d.detail).join(' · ')}>{a.rules.map(ruleLabel).join(', ')}</td>
-              <td>{a.severity}</td>
+              <td className={`sev-text-${a.severity}`}>{a.severity}</td>
             </tr>
           ))}
           {rows.length === 0 && <tr><td colSpan={4} className="text-muted">No alerts yet.</td></tr>}

@@ -6,7 +6,10 @@ const WEB = 'http://localhost:3200';
 export default defineConfig({
   testDir: 'e2e',
   timeout: 90_000,
-  use: { baseURL: WEB, video: process.env.VIDEO ? 'on' : 'off' },
+  use: process.env.VIDEO
+    ? // README recording: tall enough that the stream map and the worker strip stay in frame
+      { baseURL: WEB, video: { mode: 'on', size: { width: 1280, height: 1040 } }, viewport: { width: 1280, height: 1040 } }
+    : { baseURL: WEB },
   webServer: [
     {
       command: 'go run ./cmd/streamguard',
