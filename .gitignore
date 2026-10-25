@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+node_modules/
+.next/
+coverage.out
+test-results/
+playwright-report/
+.vercel
+*.test
+/api/streamguard
