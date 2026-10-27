@@ -2,7 +2,7 @@
 
 Real-time card-fraud scoring over a partitioned event stream, with idempotent consumer-group workers and a live dashboard where you can kill a worker mid-run and watch nothing get lost or scored twice.
 
-**Live demo:** coming soon
+**Live demo:** [streamguard-pied.vercel.app](https://streamguard-pied.vercel.app) (the API runs on Render's free tier, so the first request after a quiet spell can take about 30 seconds)
 
 ![Starting a run, injecting a card-testing attack and killing a worker](docs/kill-a-worker.gif)
 
